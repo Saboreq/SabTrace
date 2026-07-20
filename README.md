@@ -2,7 +2,7 @@
 
 # SabTrace
 
-**Fast, script-friendly log filtering and statistics in modern C++20.**
+**Fast, script-friendly log analysis in modern C++20.**
 
 [![CI](https://github.com/Saboreq/SabTrace/actions/workflows/ci.yml/badge.svg)](https://github.com/Saboreq/SabTrace/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Saboreq/SabTrace?display_name=tag&sort=semver)](https://github.com/Saboreq/SabTrace/releases)
@@ -11,65 +11,77 @@
 
 </div>
 
-SabTrace reads plain-text logs from files or standard input, identifies common log levels, applies literal or regular-expression filters, prints useful statistics, and exports structured JSON reports. It is designed as a small standalone binary with no runtime dependencies.
+SabTrace is a lightweight command-line tool for searching plain-text logs, isolating important events, reviewing severity statistics, and exporting structured JSON reports. It reads one or more files or standard input and ships as a standalone executable with no third-party runtime dependencies.
 
 ## Highlights
 
-- Plain-text log analysis from one or more files or `stdin`
-- Automatic `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, and `FATAL` detection
-- Literal, regex, level, and case-insensitive filtering
-- Colored terminal output with a `--no-color` option
-- Per-level statistics for scanned and matched lines
-- Structured JSON report export
-- Predictable exit codes for scripts and CI
-- Cross-platform CMake build, tests, and release automation
+- Analyse one or more log files or read directly from `stdin`
+- Detect `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`, and unknown lines
+- Filter by severity, literal text, ECMAScript regular expression, or result limit
+- Use case-insensitive matching when required
+- Print readable terminal output and per-level statistics
+- Export structured JSON reports
+- Use predictable exit codes in scripts and automated workflows
+- Run on Windows, Linux, and macOS
 
-## Quick start
+## Download
+
+Prebuilt archives are available on the [Releases page](https://github.com/Saboreq/SabTrace/releases/latest) for Windows, Linux, and macOS. Each release includes SHA-256 checksums so downloaded archives can be verified before use.
+
+After extracting the archive, run:
 
 ```bash
-cmake --preset release
-cmake --build --preset release
-ctest --preset release
+./bin/sabtrace --version
 ```
 
-The binary is created at `build/release/sabtrace` on Unix-like systems or `build/release/sabtrace.exe` on Windows when using Ninja.
+On Windows:
 
-### Analyse a log file
-
-```bash
-sabtrace examples/sample.log --level error --stats
+```powershell
+.\bin\sabtrace.exe --version
 ```
 
-### Search without case sensitivity
+## Usage
+
+### Filter by severity
 
 ```bash
-sabtrace app.log --contains "connection refused" --ignore-case
+sabtrace application.log --level error --stats
+```
+
+### Search for a phrase
+
+```bash
+sabtrace application.log --contains "connection refused" --ignore-case
 ```
 
 ### Use a regular expression and export JSON
 
 ```bash
-sabtrace app.log --regex "timeout|retry" --json report.json
+sabtrace application.log --regex "timeout|retry" --json report.json
 ```
 
 ### Read from a pipeline
 
 ```bash
-cat app.log | sabtrace --level warn --max-results 20
+cat application.log | sabtrace --level warn --max-results 20
 ```
 
 PowerShell:
 
 ```powershell
-Get-Content .\app.log | .\sabtrace.exe --level warn --max-results 20
+Get-Content .\application.log | .\sabtrace.exe --level warn --max-results 20
 ```
 
-## CLI reference
+## Command reference
 
 ```text
 Usage:
   sabtrace [OPTIONS] [FILE...]
   command | sabtrace [OPTIONS]
+
+Inputs:
+  FILE...                Read one or more log files
+  -                      Read standard input
 
 Filters:
   --contains TEXT        Keep lines containing literal text
@@ -82,15 +94,23 @@ Output:
   -s, --stats            Print level and match statistics
   -j, --json PATH        Write a structured JSON report
   -q, --quiet            Suppress matched lines
-  --no-color             Disable ANSI colors
+  --no-color             Disable ANSI colours
+
+General:
+  -h, --help             Show help
+  -V, --version          Show the version
 ```
 
-Run `sabtrace --help` for the complete reference and exit-code documentation.
+Exit codes:
+
+- `0` — completed with one or more matches
+- `1` — completed successfully with no matches
+- `2` — invalid arguments, invalid regex, or input/output failure
 
 ## Example output
 
 ```text
-examples/sample.log:4 [ERROR] 2026-07-20T09:01:15Z [ERROR] Database connection refused
+application.log:4 [ERROR] 2026-07-20T09:01:15Z [ERROR] Database connection refused
 
 Summary
   lines scanned: 7
@@ -106,7 +126,7 @@ Level      all   matched
  UNKNOWN   0     0
 ```
 
-## JSON report
+## JSON reports
 
 ```json
 {
@@ -118,7 +138,7 @@ Level      all   matched
   },
   "matches": [
     {
-      "source": "examples/sample.log",
+      "source": "application.log",
       "line": 4,
       "level": "ERROR",
       "text": "2026-07-20T09:01:15Z [ERROR] Database connection refused"
@@ -127,18 +147,25 @@ Level      all   matched
 }
 ```
 
-The real report also records active filters and complete level counts.
+The complete report also records active filters and per-level counts.
 
-## Build requirements
+## Build from source
 
-- A C++20 compiler:
-  - GCC 11 or newer
-  - Clang 14 or newer
-  - Visual Studio 2022 / MSVC 19.3x or newer
+Requirements:
+
 - CMake 3.24 or newer
-- Ninja for the included presets
+- A C++20 compiler
+- Ninja for the included presets, or another supported CMake generator
 
-A generator other than Ninja can be used with normal CMake commands:
+Using the provided presets:
+
+```bash
+cmake --preset release
+cmake --build --preset release
+ctest --preset release
+```
+
+Using a different generator:
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -146,35 +173,27 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-## Releases
+## Release process
 
-The release workflow runs when a tag matching `v*` is pushed. It:
-
-1. Builds and tests SabTrace on Windows, Linux, and macOS.
-2. Installs the binary and documentation into a clean staging directory.
-3. Creates platform archives.
-4. Generates SHA-256 checksums.
-5. Publishes the assets in a GitHub Release.
-
-Example:
+Pushing a semantic version tag such as `v0.2.0` starts the release workflow. It builds and tests the project on each supported platform, packages the executable and documentation, generates SHA-256 checksums, and publishes the assets in a GitHub Release.
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 ## Current scope
 
-Version `0.1.0` intentionally focuses on portable plain-text analysis. Timestamp-range filtering, recursive directory scanning, JSON/NDJSON field parsing, follow mode, and performance benchmarks are suitable next milestones.
+Version `0.1.0` focuses on portable plain-text analysis. Potential future additions include timestamp-range filtering, recursive directory scanning, structured JSON/NDJSON fields, follow mode, and performance benchmarks.
 
 ## Project structure
 
 ```text
-.github/workflows/    CI and tagged release automation
+.github/workflows/    Continuous integration and release packaging
 examples/             Sample log input
 include/sabtrace/     Public C++ headers
 src/                  CLI and analysis implementation
-tests/                Dependency-free unit tests
+tests/                Dependency-free tests
 CMakeLists.txt         Build, test, and install configuration
 CMakePresets.json      Reproducible development and release presets
 ```
@@ -186,3 +205,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and pull-req
 ## License
 
 SabTrace is available under the [MIT License](LICENSE).
+
+Developed and maintained by [Saboreq](https://saboreq.xyz), a software development company.
