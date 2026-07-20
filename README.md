@@ -206,4 +206,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and pull-req
 
 SabTrace is available under the [MIT License](LICENSE).
 
-Developed and maintained by [Saboreq](https://saboreq.xyz), a software development company.
+Created and maintained by the independent developer behind [Saboreq](https://saboreq.xyz), a public development brand.
