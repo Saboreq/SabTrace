@@ -1,0 +1,14 @@
+/build/
+/out/
+/.cache/
+/.idea/
+/.vscode/
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+compile_commands.json
+.DS_Store
+Thumbs.db
+*.log
+report.json
